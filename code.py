@@ -1,0 +1,225 @@
+import os
+import numpy as np
+import nltk
+import re
+from nltk.stem import PorterStemmer
+from nltk.stem import LancasterStemmer
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
+
+# call the nltk downloader
+# nltk.download()
+# print(nltk.corpus.gutenberg.fileids())
+# n=1;
+
+print("Hello world !")
+
+porter = PorterStemmer()
+set(stopwords.words('english'))
+stop_words = set(stopwords.words('english'))
+
+
+def And(pi1, pi2):
+    answer = []
+    i = 0
+    j = 0
+    while i < len(pi1) and j < len(pi2):
+        if pi1[i] == pi2[j]:
+            answer.append(pi1[i])
+            i = i+1
+            j = j+1
+        elif pi1[i] < pi2[j]:
+            i = i+1
+        elif pi1[i] > pi2[j]:
+            j = j+1
+    return answer
+
+
+def Or(pi1, pi2):
+    answer = []
+    i = 0
+    j = 0
+    while i < len(pi1) and j < len(pi2):
+        if pi1[i] < pi2[j]:
+            answer.append(pi1[i])
+            i = i+1
+        elif pi1[i] == pi2[j]:
+            answer.append(pi1[i])
+            i = i+1
+            j = j+1
+        else:
+            answer.append(pi2[j])
+            j = j+1
+
+    if(len(pi1) < len(pi2)):
+        s = len(pi1)
+        while s < len(pi2):
+            answer.append(pi2[s])
+            s = s+1
+    elif(len(pi1) > len(pi2)):
+        s = len(pi2)
+        while s < len(pi1):
+            answer.append(pi1[s])
+            s = s+1
+
+    return answer
+
+
+def Not(pi):
+    i = 0
+    answer = []
+    print(pi[4])
+    if(pi[0] > 1):
+        for m in range(1, pi[0]):
+            answer.append(m)
+
+    while i < len(pi)-1:
+        dif = pi[i+1]-pi[i]
+        # print(dif)
+        if dif > 1:
+            strt = pi[i]
+            fin = pi[i+1]
+            for d in range(strt+1, fin):
+                answer.append(d)
+        i = i+1
+
+    x = pi[len(pi)-1]+1
+    for i in range(x, 41):
+        answer.append(i)
+    return answer
+
+
+def inputFunction(key, final_list):
+    key = key.split(' ')
+    # print(key[1])
+    # count=0
+    # for i in key:                                                                   #for 2d array
+    #         if(i != 'OR' and i != 'NOT' and i != 'AND'):
+    #                 count=count+1
+
+    # post_list=[[0 for y in range(10)] for x in range(count)]                       as 2d array
+    post_list = {}  # as dictionary
+    # np.zeros(np.random.randint(10)+1)
+    # k in range(len(post_list[x]))
+    k = 0
+    for i in key:
+        if(i != 'OR' and i != 'NOT' and i != 'AND'):
+            m = 0
+            # for values in final_list[i]:                                for 2d array
+            #         post_list[k][m]=values
+            #         m=m+1
+            print(i)
+            post_list[k] = final_list[i]
+            #[value for value in final_list[i]]
+            k = k+1
+            # print(len(final_list[i]))
+
+    print("Posting lists here are : ", post_list)
+    #print(len(post_list[0]), len(post_list[1]), "\n")
+    # x=post_list[0]
+    #print(type(x), type(post_list[0]))
+    print("Not of ", key[0], "is: ", Not(post_list[0]))
+    print("And of ", key[0], " and ", key[2],
+          "is: ", And(post_list[0], post_list[1]))
+    print("Or of ", key[0], " and ", key[2],
+          "is: ", Or(post_list[0], post_list[1]))
+
+
+def read_text_file(file_path, id):
+    global im
+    with open(file_path, 'r', encoding="utf8") as f:
+        # print(f.readlines(),"\n")
+        for line in f:
+            # reading each word
+            for word in line.split():
+               # displaying the words
+               # print(word, "\t")
+                if word not in stop_words:
+                    word = re.sub(r"[^a-zA-Z0-9]", "", word)
+                    if(word.isalnum()):
+                        word = porter.stem(word)
+                        # stemming[im].append(word)
+                        # stemming[im].append(id)
+                        stemming[im][0] = word
+                        stemming[im][1] = id
+                        # print(stemming)
+                        im = im+1
+                    #list.append(" ")
+                # print(list)
+
+
+# Folder Path
+path = "D:\\4th year\IR\IR_assignment"
+# Change the directory
+os.chdir(path)
+
+# im=0
+stemming = [['zz' for i in range(2)] for j in range(880)]
+post_li = []
+
+id = 0
+im = 0
+
+# iterate through all file
+for file in os.listdir():
+    # Check whether file is in text format or not
+    if file.endswith(".txt"):
+        file_path = f"{path}/{file}"
+        # file = file.split('t')
+        # file = file[1].split('.')
+        # file = int(file[0])
+        # #call read text file function
+        # read_text_file(file_path, file)
+        read_text_file(file_path, id)
+        id = id+1
+
+stemming = sorted(stemming, key=lambda x: x[0])
+
+# print("\n optimized index: \n", stemming)
+
+k = 0
+linked_list_data = dict()
+
+for word in range(0, 880):
+    if (stemming[word][0]) not in linked_list_data.values():
+        linked_list_data[k] = stemming[word][0]
+        k = k+1
+
+final_list = {}
+vocab = []
+post_list = {}
+for i in linked_list_data.values():
+    temp_list = []
+    for j in range(len(stemming)):
+        if (i == stemming[j][0]) and (stemming[j][1] not in temp_list):
+            temp_list.append(stemming[j][1])
+
+        # if temp_list not in final_list[i]:
+        final_list[i] = temp_list
+
+    # for k in final_list[i]:
+    #     print(post_list.values())
+    #     if(k) not in post_list.values():
+    #         post_list[i]=final_list[i]
+
+# sorting posting list
+# for i in final_list:
+#     for j in final_list[i]:
+#         print(final_list[i])
+# print(final_list.items())
+# final_list = sorted(final_list.items(), key = lambda kv:(kv[1], kv[0]))
+# final_list = sorted(final_list, key=lambda x: x[1])
+
+print("\n Inverted Index \n")
+for i in final_list:
+    print(i, ": ", final_list[i], "\n")
+
+# print("\n\nPosting list:\n\n\n\n")
+# for i in post_list:
+#         print(i,": ", post_list[i], "\n")
+
+
+# User Inputs
+
+key = input(("Enter word to search: "))
+inputFunction(key, final_list)
