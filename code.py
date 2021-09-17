@@ -37,6 +37,10 @@ def Or(pi1, pi2):
     answer = []
     i = 0
     j = 0
+    if(len(pi1) == 0):
+        return pi2
+    if(len(pi2) == 0):
+        return pi1
     while i < len(pi1) and j < len(pi2):
         if pi1[i] < pi2[j]:
             answer.append(pi1[i])
@@ -91,12 +95,16 @@ def Not(pi):
 def inputFunction(key, final_list):
     key = key.split(' ')
     post_list = []
+    for i in range(len(key)):
+        if(key[i] != 'OR' and key[i] != 'NOT' and key[i] != 'AND'):
+            key[i] = porter.stem(key[i])
     for i in key:
         if(i != 'OR' and i != 'NOT' and i != 'AND'):
             if(i in final_list):
                 post_list.append(final_list[i])
             else:
                 print(i, "word not found")
+                post_list.append([])
 
     print("Posting lists here are : ", post_list)
     print("Final postings: ", inputProcess(key, post_list))
@@ -192,7 +200,7 @@ for i in linked_list_data.values():
 print("\n Inverted Index \n")
 for i in final_list:
     final_list[i].sort()
-    #print(i, ": ", final_list[i], "\n")
+    print(i, ": ", final_list[i], "\n")
 
 # User Inputs
 
