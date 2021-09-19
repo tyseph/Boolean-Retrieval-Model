@@ -4,9 +4,11 @@ import nltk
 import re
 from nltk.stem import PorterStemmer
 from nltk.stem import LancasterStemmer
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.tokenize import sent_tokenize, word_tokenize, TweetTokenizer
 from nltk.corpus import stopwords
 import streamlit as st
+import string
+from collections import OrderedDict
 
 # call the nltk downloader
 # nltk.download()
@@ -19,6 +21,49 @@ porter = PorterStemmer()
 set(stopwords.words('english'))
 stop_words = set(stopwords.words('english'))
 
+def read_text_file(file_path, id, doc_list):
+    global im
+    with open(file_path, 'r', encoding="utf8") as f:
+        stuff = f.read()
+        final_token_list = preprocessing(stuff)
+        #print(final_token_list)
+        for i in range(len(final_token_list)):
+            if final_token_list[i] not in doc_list.keys():
+                doc_list[final_token_list[i]] = {}
+                doc_list[final_token_list[i]][id] = []
+            else:
+                doc_list[final_token_list[i]][id] = []
+                
+        for k in range(len(final_token_list)):
+            #print(final_token_list[k])
+            doc_list[final_token_list[k]][id].append(k)
+    
+    return doc_list
+        
+        
+
+def preprocessing(final_string):
+        # Tokenize.
+    #print(final_string)
+    # for i in range(len(token_list)):
+    #     token_list[i] = re.sub(r"[^a-zA-Z0-9]", "", token_list[i])
+    tokenizer = TweetTokenizer()
+    token_list = tokenizer.tokenize(final_string)
+ 
+    # Remove punctuations.
+    table = str.maketrans('', '', '\t')
+    token_list = [word.translate(table) for word in token_list]
+    for word in token_list:
+        word = porter.stem(word)
+        word = re.sub(r"[^a-zA-Z0-9]", "", word)
+    punctuations = (string.punctuation).replace("'", "")
+    trans_table = str.maketrans('', '', punctuations)
+    stripped_words = [word.translate(trans_table) for word in token_list]
+    token_list = [str for str in stripped_words if str]
+ 
+    # Change to lowercase.
+    token_list =[word.lower() for word in token_list]
+    return token_list
 
 def And(pi1, pi2):
     answer = []
@@ -92,6 +137,16 @@ def Not(pi):
         answer.append(i)
     return answer
 
+def remove_header_footer(final_string):
+    new_final_string = ""
+    tokens = final_string.split('\n\n')
+ 
+    # Remove tokens[0] and tokens[-1]
+    for token in tokens[1:-1]:
+        new_final_string += token+" "
+    return new_final_string
+ 
+
 
 def inputFunction(key, final_list):
     key = key.split(' ')
@@ -132,21 +187,6 @@ def inputProcess(key, post_list):
     #print(post_list)
     return post_list[k]
 
-def read_text_file(file_path, id):
-    global im
-    with open(file_path, 'r', encoding="utf8") as f:
-        for line in f:
-            #-----READ EACH WORD-----#
-            for word in line.split():
-               #-----REMOVING STOP WORDS-----#
-                if word not in stop_words:
-                    word = re.sub(r"[^a-zA-Z0-9]", "", word)
-                    #-----STEMMING-----#
-                    if(word.isalnum()):
-                        word = porter.stem(word)
-                        stemming[im][0] = word
-                        stemming[im][1] = id
-                        im = im+1
 
 
 #-----FOLDER PATH-----#
@@ -154,8 +194,7 @@ path = "D:\\4th year\IR\IR_assignment"
 os.chdir(path)
 
 stemming = [['zz' for i in range(2)] for j in range(880)]
-post_li = []
-
+doc_list = dict()
 im = 0
 
 #-----ITERATING THROUGH ALL FILES-----#
@@ -167,39 +206,30 @@ for file in os.listdir():
         file = file.split('t')
         file = file[1].split('.')
         file = int(file[0])
-
+        k = 0
         #-----READ FILE FUNCTION-----#
-        read_text_file(file_path, file)
+        if k != 1:
+            read_text_file(file_path, file, doc_list)
+            k = 1
 
-stemming = sorted(stemming, key=lambda x: x[0])
+doc_list = OrderedDict(sorted(dict.items(doc_list)))
+# for i in doc_list:
+#     st.header(i,": ", doc_list[i])
+    
+st.header(doc_list)
+    
 
-k = 0
-linked_list_data = dict()
-
-for word in range(0, 880):
-    if (stemming[word][0]) not in linked_list_data.values():
-        linked_list_data[k] = stemming[word][0]
-        k = k+1
-
-final_list = {}
-vocab = []
-
-for i in linked_list_data.values():
-    temp_list = []
-    for j in range(len(stemming)):
-        if (i == stemming[j][0]) and (stemming[j][1] not in temp_list):
-            temp_list.append(stemming[j][1])
-        final_list[i] = temp_list
+#stemming = sorted(stemming, key=lambda x: x[0])
 
 #-----PRINTS THE SORTED INVERTED INDEX-----#
-print("\n Inverted Index \n")
-final_list.popitem()
-for i in final_list:
-    final_list[i].sort()
-    print(i, ": ", final_list[i], "\n")
+# print("\n Inverted Index \n")
+# final_list.popitem()
+# for i in final_list:
+#     final_list[i].sort()
+#     #print(i, ": ", final_list[i], "\n")
 
 # User Inputs
 
+#key = st.text_input("Enter word to search: ")
 key = st.text_input("Enter word to search: ")
-#key = input("Enter word to search: ")
-inputFunction(key, final_list)
+inputFunction(key, doc_list)
